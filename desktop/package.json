@@ -1,0 +1,56 @@
+{
+	"name": "@goveedmx/desktop",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Electron desktop shell for GoveeDMX (Windows/macOS)",
+	"author": "aramo",
+	"main": "main.js",
+	"scripts": {
+		"start": "electron .",
+		"dist:win": "electron-builder --win nsis",
+		"dist:portable": "electron-builder --win zip",
+		"dist:mac": "electron-builder --mac dmg --x64 --arm64",
+		"dist:linux": "electron-builder --linux AppImage"
+	},
+	"devDependencies": {
+		"electron": "^33.2.0",
+		"electron-builder": "^25.1.8"
+	},
+	"build": {
+		"appId": "com.goveedmx.bridge",
+		"productName": "GoveeDMX",
+		"electronVersion": "33.4.11",
+		"npmRebuild": false,
+		"directories": {
+			"output": "dist-app",
+			"buildResources": "build"
+		},
+		"files": ["main.js", "package.json"],
+		"extraResources": [
+			{ "from": "../server/dist/server.cjs", "to": "server/server.cjs" },
+			{ "from": "../web/dist", "to": "web" },
+			{ "from": "build/icon.png", "to": "icon.png" },
+			{ "from": "build/tray.png", "to": "tray.png" }
+		],
+		"win": {
+			"target": ["nsis"],
+			"icon": "build/icon.ico"
+		},
+		"nsis": {
+			"oneClick": false,
+			"perMachine": false,
+			"allowToChangeInstallationDirectory": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true
+		},
+		"mac": {
+			"target": ["dmg"],
+			"category": "public.app-category.utilities",
+			"icon": "build/icon.icns"
+		},
+		"linux": {
+			"target": ["AppImage"],
+			"category": "Utility"
+		}
+	}
+}

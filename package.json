@@ -1,0 +1,24 @@
+{
+	"name": "goveedmx",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Art-Net to Govee LAN bridge for live theater",
+	"license": "MIT",
+	"workspaces": [
+		"server",
+		"web"
+	],
+	"scripts": {
+		"build": "npm run build:web && npm run build:server",
+		"build:web": "npm --workspace web run build",
+		"build:server": "npm --workspace server run build",
+		"dev:server": "npm --workspace server run dev",
+		"dev:web": "npm --workspace web run dev",
+		"start": "node server/dist/server.cjs",
+		"test": "npm --workspace server run test",
+		"typecheck": "npm --workspace server run typecheck && npm --workspace web run typecheck"
+	},
+	"engines": {
+		"node": ">=20"
+	}
+}
