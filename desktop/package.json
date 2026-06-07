@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"description": "Electron desktop shell for GoveeDMX (Windows/macOS)",
-	"author": "aramo",
+	"author": "Ariel Ramos",
 	"main": "main.js",
 	"scripts": {
 		"start": "electron .",
