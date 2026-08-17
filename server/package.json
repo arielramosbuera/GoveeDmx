@@ -3,7 +3,7 @@
 	"version": "1.0.1",
 	"private": true,
 	"description": "GoveeDMX backend: Art-Net listener, mapping engine, Govee LAN control, REST + WebSocket API",
-	"license": "MIT",
+	"license": "GPL-3.0-or-later",
 	"main": "dist/server.cjs",
 	"scripts": {
 		"build": "node build.mjs",

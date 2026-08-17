@@ -4,6 +4,7 @@
 	"private": true,
 	"description": "Electron desktop shell for GoveeDMX (Windows/macOS)",
 	"author": "Ariel Ramos",
+	"license": "GPL-3.0-or-later",
 	"main": "main.js",
 	"scripts": {
 		"start": "electron .",

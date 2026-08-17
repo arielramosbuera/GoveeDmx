@@ -3,7 +3,7 @@
 	"version": "1.0.1",
 	"private": true,
 	"description": "Art-Net to Govee LAN bridge for live theater",
-	"license": "MIT",
+	"license": "GPL-3.0-or-later",
 	"workspaces": [
 		"server",
 		"web"
