@@ -43,7 +43,7 @@ async function main(): Promise<void> {
 		} else {
 			logger.error(`HTTP server error: ${err.message}`)
 		}
-		process.exit(1)
+		if (process.env.GOVEEDMX_EMBEDDED !== '1') process.exit(1)
 	})
 
 	server.listen(port, () => {
@@ -64,5 +64,5 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
 	logger.error(`Fatal: ${(err as Error).stack || (err as Error).message}`)
-	process.exit(1)
+	if (process.env.GOVEEDMX_EMBEDDED !== '1') process.exit(1)
 })

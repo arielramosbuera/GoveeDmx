@@ -12,8 +12,8 @@ Environment=GOVEEDMX_STATIC_DIR=/opt/goveedmx/web
 Environment=GOVEEDMX_DATA_DIR=/var/lib/goveedmx
 Restart=always
 RestartSec=3
-# Bridge listens on UDP 6454 (Art-Net), 4001-4003 (Govee LAN) and TCP 8080 (web UI),
-# all >1024 so no extra privileges are required.
+# Bridge listens on UDP 6454 and 4001-4003 plus the configured web TCP port.
+# All default ports are above 1024, so no extra privileges are required.
 
 [Install]
 WantedBy=multi-user.target

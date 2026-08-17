@@ -119,20 +119,21 @@ npm run dist:linux     # AppImage in desktop/dist-app/
 
 ### Raspberry Pi / Linux (headless systemd service — recommended for show machines)
 
-No desktop app needed; installs as an auto-starting service controlled from any browser on the LAN. On the device (needs **Node.js 20+**):
+No desktop app needed; installs as an auto-starting service controlled from any browser on the LAN. On a fresh Ubuntu/Debian server, run:
 
 ```bash
-cd /path/to/GoveeDMX/installers
-sudo ./install.sh
+curl -fsSL https://raw.githubusercontent.com/arielramosbuera/GoveeDmx/main/installers/install-ubuntu.sh | sudo bash
 ```
 
-This builds (if needed), installs to `/opt/goveedmx`, creates a `systemd` service (auto-start on boot, auto-restart on crash), opens the firewall ports, and prints the web UI URL (e.g. `http://<pi-ip>:8080`). Manage it with:
+The installer adds Node.js 20 if needed and guides you through the web port, Art-Net port and universes, network binding, and node name. Re-run the same command later to update, factory-reset, uninstall, change the web port, view service status/logs, or repair the installation.
+
+For unattended first install with recommended defaults:
 
 ```bash
-sudo systemctl status goveedmx
-sudo journalctl -u goveedmx -f
-sudo ./uninstall.sh            # or: sudo ./uninstall.sh --purge
+curl -fsSL https://raw.githubusercontent.com/arielramosbuera/GoveeDmx/main/installers/install-ubuntu.sh | sudo bash -s -- --install --defaults
 ```
+
+The service installs to `/opt/goveedmx`, stores configuration and logs in `/var/lib/goveedmx`, opens the required UFW ports when available, starts on boot, and restarts on failure. See [the Linux installation guide](docs/install-linux-pi.md) for management commands and noninteractive options.
 
 ### App icons (optional)
 

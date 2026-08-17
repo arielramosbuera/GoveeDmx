@@ -6,3 +6,4 @@ dist/
 desktop/dist-app/
 server/dist/
 web/dist/
+release/
