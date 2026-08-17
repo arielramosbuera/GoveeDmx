@@ -9,9 +9,9 @@ GoveeDMX ships as a standard Windows desktop app (Electron) with an NSIS install
 3. Launch **GoveeDMX**. The app window opens to the control UI; the bridge runs inside the app.
 4. When Windows Defender Firewall prompts, **allow** the app on private networks (needed for Art-Net UDP 6454 and Govee LAN UDP 4001–4003).
 
-The app stays running in the **system tray** when you close the window, so the bridge keeps working during a show. Use the tray icon → **Quit** to fully stop it.
+The bridge runs inside Electron's main process. Closing the control window or losing its renderer stops the entire app and releases all network ports. Starting GoveeDMX again starts a fresh backend.
 
-Data and logs are stored in `%APPDATA%\GoveeDMX`.
+Data and logs are stored in `%APPDATA%\@goveedmx\desktop`.
 
 ## Build the installer (developers)
 

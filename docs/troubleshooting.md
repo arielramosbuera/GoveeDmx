@@ -15,8 +15,10 @@ netsh advfirewall firewall add rule name="GoveeDMX Art-Net" dir=in action=allow 
 ```
 
 The installer (`build/installer.nsh`) adds these rules automatically when run as
-Administrator. Also confirm a previous copy isn't still running in the system tray
-(it would hold the ports); use the tray's **Quit** before relaunching.
+Administrator. Current desktop builds stop the in-process backend whenever the
+control window closes or its renderer exits, so a normal relaunch does not leave
+ports behind. If an older build remains, end `GoveeDMX.exe` in Task Manager and
+install the latest release.
 
 ## Bulbs not discovered
 
@@ -46,7 +48,7 @@ Administrator. Also confirm a previous copy isn't still running in the system tr
 
 - Confirm the server is running and the port (default **8080**) isn't in use. Change `server.httpPort` in the config file if needed.
 - Config file location:
-  - Windows: `%APPDATA%\GoveeDMX\config.json`
+  - Windows: `%APPDATA%\@goveedmx\desktop\config.json`
   - macOS: `~/Library/Application Support/GoveeDMX/config.json`
   - Linux/Pi: `~/.config/GoveeDMX/config.json` (or the service's data dir)
 
@@ -59,6 +61,6 @@ Administrator. Also confirm a previous copy isn't still running in the system tr
 
 - Live logs appear on the **Dashboard**.
 - Persistent logs:
-  - Windows: `%APPDATA%\GoveeDMX\logs\goveedmx.log`
+  - Windows: `%APPDATA%\@goveedmx\desktop\logs\goveedmx.log`
   - macOS: `~/Library/Application Support/GoveeDMX/logs/goveedmx.log`
   - Linux/Pi: `~/.config/GoveeDMX/logs/goveedmx.log` (or `journalctl -u goveedmx`)

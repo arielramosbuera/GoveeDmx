@@ -14,7 +14,7 @@ If the app is unsigned, macOS Gatekeeper may block the first launch:
 - Right-click the app → **Open** → **Open**, or
 - System Settings → Privacy & Security → **Open Anyway**.
 
-The app stays in the menu bar/tray when the window is closed; use **Quit** to stop the bridge. Data and logs live in `~/Library/Application Support/GoveeDMX`.
+The bridge runs inside Electron's main process. Closing the control window stops the app and backend together. Data and logs live in Electron's application-support directory.
 
 ## Build the app (developers)
 

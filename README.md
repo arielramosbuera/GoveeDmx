@@ -16,7 +16,7 @@ Before starting, enable **LAN Control** for each light in the Govee Home app. Th
 
 ### Windows
 
-1. [Download GoveeDMX Setup 1.0.1](https://github.com/arielramosbuera/GoveeDmx/releases/latest/download/GoveeDMX.Setup.1.0.1.exe).
+1. [Download GoveeDMX Setup 1.0.2](https://github.com/arielramosbuera/GoveeDmx/releases/latest/download/GoveeDMX.Setup.1.0.2.exe).
 2. Right-click the installer and select **Run as administrator** so it can configure Windows Firewall.
 3. Start GoveeDMX, then use the web interface that opens automatically.
 

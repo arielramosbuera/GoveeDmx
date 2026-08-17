@@ -5,11 +5,11 @@
  *
  * Boots the exact same backend bundle in-process (so there is no separate
  * runtime or sidecar), then opens a window pointed at the local web UI.
- * Closing the window hides to the tray so the bridge keeps running during a
- * show; "Quit" from the tray stops everything.
+ * The backend runs inside Electron's main process, and the desktop window owns
+ * that process. Closing or losing the window exits the app and backend together.
  */
 
-const { app, BrowserWindow, Tray, Menu, shell, nativeImage, dialog } = require('electron')
+const { app, BrowserWindow, shell, dialog } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const http = require('node:http')
@@ -21,19 +21,18 @@ const serverEntry = isPackaged
 	: path.join(__dirname, '..', 'server', 'dist', 'server.cjs')
 const staticDir = isPackaged ? path.join(process.resourcesPath, 'web') : path.join(__dirname, '..', 'web', 'dist')
 const iconPath = isPackaged ? path.join(process.resourcesPath, 'icon.png') : path.join(__dirname, 'build', 'icon.png')
-const trayIconPath = isPackaged ? path.join(process.resourcesPath, 'tray.png') : path.join(__dirname, 'build', 'tray.png')
 
 process.env.GOVEEDMX_STATIC_DIR = staticDir
 process.env.GOVEEDMX_DATA_DIR = app.getPath('userData')
 
 let mainWindow = null
 let splashWindow = null
-let tray = null
 let isQuitting = false
 let startupComplete = false
 let startupFailed = false
 let desktopLogPath = null
 let currentStartupStep = 0
+let ownershipWatchdog = null
 
 const STARTUP_STEPS = [
 	'Preparing application',
@@ -68,6 +67,34 @@ function writeDesktopLog(level, message) {
 	} catch (error) {
 		console.error('Unable to write desktop log:', error)
 	}
+}
+
+function isUsableWindow(window) {
+	return Boolean(window && !window.isDestroyed() && !window.webContents.isDestroyed())
+}
+
+function quitApplication(reason, exitCode = 0) {
+	if (isQuitting) return
+	isQuitting = true
+	writeDesktopLog('INFO', `Stopping desktop and in-process backend: ${reason}`)
+	if (ownershipWatchdog) {
+		clearInterval(ownershipWatchdog)
+		ownershipWatchdog = null
+	}
+
+	const forceExit = setTimeout(() => app.exit(exitCode), 3000)
+	forceExit.unref()
+	app.quit()
+}
+
+function startOwnershipWatchdog() {
+	if (ownershipWatchdog) clearInterval(ownershipWatchdog)
+	ownershipWatchdog = setInterval(() => {
+		if (startupComplete && !isQuitting && !isUsableWindow(mainWindow)) {
+			quitApplication('control panel window is no longer available', 1)
+		}
+	}, 1000)
+	ownershipWatchdog.unref()
 }
 
 function getBackendLogTail() {
@@ -136,21 +163,21 @@ async function createSplash() {
 		webPreferences: { contextIsolation: true, sandbox: true },
 	})
 	splashWindow.setMenu(null)
+	splashWindow.webContents.on('render-process-gone', (_event, details) => {
+		writeDesktopLog('ERROR', `Startup renderer stopped (${details.reason}, exit code ${details.exitCode})`)
+		quitApplication('startup renderer stopped', 1)
+	})
 	splashWindow.webContents.on('will-navigate', (event, url) => {
 		if (!url.startsWith('goveedmx://')) return
 		event.preventDefault()
 		if (url === 'goveedmx://open-logs') void shell.openPath(path.dirname(desktopLogPath))
 		if (url === 'goveedmx://quit') {
-			isQuitting = true
-			app.quit()
+			quitApplication('startup error window closed', 1)
 		}
 	})
 	splashWindow.on('closed', () => {
 		splashWindow = null
-		if (!startupComplete && !startupFailed) {
-			isQuitting = true
-			app.quit()
-		}
+		if (!startupComplete) quitApplication('startup window closed', startupFailed ? 1 : 0)
 	})
 	await splashWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(splashHtml())}`)
 }
@@ -246,17 +273,18 @@ async function createWindow(port) {
 	mainWindow.webContents.on('render-process-gone', (_event, details) => {
 		const error = new Error(`Control panel renderer stopped (${details.reason}, exit code ${details.exitCode})`)
 		writeDesktopLog('ERROR', formatError(error))
-		if (!startupComplete) showStartupError(5, error)
+		quitApplication('control panel renderer stopped', 1)
 	})
 
 	await mainWindow.loadURL(`http://localhost:${port}`)
 	mainWindow.show()
 
-	mainWindow.on('close', (e) => {
-		if (!isQuitting) {
-			e.preventDefault()
-			mainWindow.hide()
-		}
+	mainWindow.on('close', () => {
+		if (!isQuitting) writeDesktopLog('INFO', 'Control panel close requested')
+	})
+	mainWindow.on('closed', () => {
+		mainWindow = null
+		if (!isQuitting) quitApplication('control panel window closed')
 	})
 }
 
@@ -292,6 +320,7 @@ async function startApplication() {
 		setStartupStep(3)
 		process.env.GOVEEDMX_EMBEDDED = '1'
 		require(serverEntry)
+		writeDesktopLog('INFO', `Backend loaded inside Electron main process PID ${process.pid}`)
 
 		setStartupStep(4)
 		await waitForServer(port)
@@ -300,6 +329,7 @@ async function startApplication() {
 		await createWindow(port)
 
 		startupComplete = true
+		startOwnershipWatchdog()
 		updateSplash(STARTUP_STEPS.length, 'done')
 		writeDesktopLog('INFO', 'Startup completed successfully')
 		if (splashWindow && !splashWindow.isDestroyed()) splashWindow.close()
@@ -310,62 +340,54 @@ async function startApplication() {
 
 function focusApplication() {
 	const window = mainWindow || splashWindow
-	if (!window || window.isDestroyed()) return
+	if (!isUsableWindow(window)) return false
 	if (window.isMinimized()) window.restore()
 	window.show()
 	window.focus()
-}
-
-function createTray() {
-	// Use the dedicated simplified tray glyph; fall back to the app icon.
-	let icon = nativeImage.createFromPath(trayIconPath)
-	if (icon.isEmpty()) icon = nativeImage.createFromPath(iconPath)
-	if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 })
-	tray = new Tray(icon)
-	tray.setToolTip('GoveeDMX bridge')
-	const menu = Menu.buildFromTemplate([
-		{ label: 'Open GoveeDMX', click: focusApplication },
-		{ label: 'Open in browser', click: () => shell.openExternal(`http://localhost:${getPort()}`) },
-		{ type: 'separator' },
-		{
-			label: 'Quit',
-			click: () => {
-				isQuitting = true
-				app.quit()
-			},
-		},
-	])
-	tray.setContextMenu(menu)
-	tray.on('click', () => (mainWindow ? mainWindow.show() : createWindow()))
+	return true
 }
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
 	app.quit()
 } else {
-	app.on('second-instance', focusApplication)
+	app.on('second-instance', () => {
+		if (focusApplication()) return
+		writeDesktopLog('WARN', 'Second launch found a windowless owner; restarting the complete app')
+		app.relaunch()
+		quitApplication('replacing windowless single-instance owner', 1)
+	})
 
 	app.whenReady().then(async () => {
 		initializeDesktopLogging()
 		writeDesktopLog('INFO', `GoveeDMX desktop starting (packaged: ${isPackaged})`)
 		await createSplash()
-		createTray()
 		await startApplication()
 
 		app.on('activate', () => {
-			if (BrowserWindow.getAllWindows().length === 0) void startApplication()
-			else focusApplication()
+			if (!focusApplication()) quitApplication('application activated without an owned window', 1)
 		})
 	}).catch((error) => {
 		writeDesktopLog('ERROR', `Electron initialization failed: ${formatError(error)}`)
 		if (app.isReady()) showStartupError(0, error)
 	})
 
-	// Keep running in the tray when all windows are closed.
 	app.on('window-all-closed', () => {
-		// no-op: tray keeps the app alive; use tray > Quit to exit
+		quitApplication('all desktop windows closed')
+	})
+	app.on('before-quit', () => {
+		isQuitting = true
+		if (ownershipWatchdog) clearInterval(ownershipWatchdog)
 	})
 }
 
-process.on('uncaughtException', (error) => showStartupError(0, error))
-process.on('unhandledRejection', (error) => showStartupError(0, error))
+process.on('uncaughtException', (error) => {
+	writeDesktopLog('ERROR', `Uncaught exception: ${formatError(error)}`)
+	if (!startupComplete && isUsableWindow(splashWindow)) showStartupError(currentStartupStep, error)
+	else quitApplication('uncaught main-process exception', 1)
+})
+process.on('unhandledRejection', (error) => {
+	writeDesktopLog('ERROR', `Unhandled rejection: ${formatError(error)}`)
+	if (!startupComplete && isUsableWindow(splashWindow)) showStartupError(currentStartupStep, error)
+	else quitApplication('unhandled main-process rejection', 1)
+})

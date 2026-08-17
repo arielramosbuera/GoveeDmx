@@ -1,6 +1,6 @@
 {
 	"name": "@goveedmx/server",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"private": true,
 	"description": "GoveeDMX backend: Art-Net listener, mapping engine, Govee LAN control, REST + WebSocket API",
 	"license": "GPL-3.0-or-later",

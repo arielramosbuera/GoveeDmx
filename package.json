@@ -1,6 +1,6 @@
 {
 	"name": "goveedmx",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"private": true,
 	"description": "Art-Net to Govee LAN bridge for live theater",
 	"license": "GPL-3.0-or-later",
